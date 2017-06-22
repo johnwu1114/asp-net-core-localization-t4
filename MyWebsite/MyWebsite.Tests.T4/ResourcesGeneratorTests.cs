@@ -1,44 +1,27 @@
 ﻿using NUnit.Framework;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using System.Globalization;
+using System.Threading;
 
 namespace MyWebsite.Tests.T4
 {
     [TestFixture]
     public class ResourcesGeneratorTests
     {
-        [Test]
-        public void GetCulture()
+        private const string _resourceFolder = @"MyWebsite.Tests.T4\Resources\";
+        private const string _resourceFile = @"Text.en-GB.resx";
+
+        [TestCase(new object[] { "en-gb", "Hello~ This message from Text.en-GB.resx" })]
+        [TestCase(new object[] { "ZH-TW", "您好~ 這段文字來自 Text.zh-TW.resx" })]
+        [TestCase(new object[] { "en-US", "Hello~ This message from Text.en-GB.resx" })]
+        [TestCase(new object[] { "ZH-cn", "Hello~ This message from Text.en-GB.resx" })]
+        [TestCase(new object[] { "Ja-Jp", "Hello" })]
+        [TestCase(new object[] { "", "Hello~ This message from Text.en-GB.resx" })]
+        public void GetResource(string culture, string expected)
         {
-            // Arrange
-            var expected = "en-GB";
-            var fileName = new FileInfo(@"Resources\Text.en-GB.resx");
-            var culturePattern = ".[A-Za-z]{2}-[A-Za-z]{2}.resx$";
+            Thread.CurrentThread.CurrentCulture = new CultureInfo(culture);
 
             // Act
-            var match = Regex.Match(fileName.FullName, culturePattern);
-            var actual = match.Value.Substring(1, 5);
-
-            // Assert
-            Assert.AreEqual(expected, actual);
-        }
-
-        [Test]
-        public void LoadResourceFile()
-        {
-            // Arrange
-            var expected = "Hello~ This message from Text.en-GB.resx";
-            var fileName = new FileInfo(@"Resources\Text.en-GB.resx");
-
-            // Act
-            var xdoc = XDocument.Load(fileName.FullName);
-            var root = xdoc.Root;
-            Dictionary<string, string> dictionary = root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
-
-            var actual = dictionary["Hello"];
+            var actual = Text.Hello;
 
             // Assert
             Assert.AreEqual(expected, actual);

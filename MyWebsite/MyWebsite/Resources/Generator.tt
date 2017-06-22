@@ -12,8 +12,6 @@
 <#@ import namespace="System.Text.RegularExpressions" #>  
 <#@ import namespace="System.Xml.Linq" #>  
 
-<# var properties = new string [] {"P1", "P2", "P3"}; #>  
-
 namespace Resources
 {
 	public class Text {  

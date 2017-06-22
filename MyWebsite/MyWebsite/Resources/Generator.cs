@@ -10,8 +10,6 @@
   
   
 
-  
-
 namespace Resources
 {
 	public class Text {  
