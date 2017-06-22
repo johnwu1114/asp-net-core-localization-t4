@@ -47,11 +47,6 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Resources\Text.ja-JP.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Text.ja-JP.resx</DependentUpon>
-    </Compile>
     <Compile Include="Text.cs" />
     <Compile Include="ResourcesGeneratorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

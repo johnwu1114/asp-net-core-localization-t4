@@ -1,64 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml.Linq;
-
-namespace MyWebsite.Tests.T4
+﻿namespace Resources
 {
-    public static class Text
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using System.Xml.Linq;
+
+    public class Text
     {
         private const string _defaultCulture = "en-gb";
         private const string _resourceFolder = @"MyWebsite.Tests.T4\Resources\";
 
-        private static Dictionary<string, Dictionary<string, string>> _resources;
+        private readonly static Dictionary<string, Dictionary<string, string>> _resources;
+        private CultureInfo _culture;
 
-        private static CultureInfo Culture
+        static Text()
         {
-            get
+            if (_resources == null)
             {
-                var culture = Thread.CurrentThread.CurrentCulture;
-                if (culture == null)
+                _resources = new Dictionary<string, Dictionary<string, string>>(StringComparer.CurrentCultureIgnoreCase);
+                var files = Directory.GetFiles(_resourceFolder, $"{nameof(Text)}*.resx");
+                foreach (var file in files)
                 {
-                    culture = new CultureInfo(_defaultCulture);
+                    var xdoc = XDocument.Load(file);
+                    var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
+                    _resources.Add(GetCulture(file), dictionary);
                 }
-                return culture;
             }
         }
 
-        private static Dictionary<string, Dictionary<string, string>> Resources
+        public Text(string culture = _defaultCulture)
         {
-            get
-            {
-                if (_resources == null)
-                {
-                    _resources = new Dictionary<string, Dictionary<string, string>>(StringComparer.CurrentCultureIgnoreCase);
-
-                    var files = Directory.GetFiles(_resourceFolder, $"{nameof(Text)}*.resx");
-                    foreach (var file in files)
-                    {
-                        var xdoc = XDocument.Load(file);
-                        var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
-                        _resources.Add(GetCulture(file), dictionary);
-                    }
-                }
-                return _resources;
-            }
+            _culture = new CultureInfo(culture);
         }
 
-        public static string Hello { get { return GetString("Hello"); } }
+        public string Hello { get { return GetString("Hello"); } }
 
-        public static string GetString(string resourceKey)
+        public string GetString(string resourceKey)
         {
-            return GetString(resourceKey, Culture.Name);
+            return GetString(resourceKey, _culture.Name);
         }
 
-        public static string GetString(string resourceKey, string culture)
+        public string GetString(string resourceKey, string culture)
         {
-            var resource = Resources.ContainsKey(culture) ? Resources[culture] : Resources[_defaultCulture];
+            var resource = _resources.ContainsKey(culture) ? _resources[culture] : _resources[_defaultCulture];
             return resource.ContainsKey(resourceKey) ? resource[resourceKey] : resourceKey;
         }
 
