@@ -1,0 +1,34 @@
+﻿<#@ template  language="C#" hostspecific="true" #>  
+<#@ output extension=".cs" #>  
+ 
+<#@ assembly name="EnvDTE" #>
+<#@ assembly name="System.Core.dll" #>  
+<#@ assembly name="System.Xml.dll" #>  
+<#@ assembly name="System.Xml.Linq.dll" #> 
+<#@ import namespace="EnvDTE" #>
+<#@ import namespace="System.Collections.Generic" #>  
+<#@ import namespace="System.IO" #>  
+<#@ import namespace="System.Linq" #>  
+<#@ import namespace="System.Text.RegularExpressions" #>  
+<#@ import namespace="System.Xml.Linq" #>  
+
+<# var properties = new string [] {"P1", "P2", "P3"}; #>  
+
+namespace Resources
+{
+	public class Text {  
+	<# foreach (var resource in GetResources()) { #>  
+	  public string <#= resource.Key #> { get; private set; } = "<#= resource.Value #>";  
+	<# } #>  
+	}  
+}
+
+<#+
+	Dictionary<string,string> GetResources() {
+		var xdoc = XDocument.Load(this.Host.ResolvePath("Text.en-GB.resx"));
+        var root = xdoc.Root;
+        var dictionary = root.Elements("data")
+							 .ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
+		return dictionary;
+	}
+#>

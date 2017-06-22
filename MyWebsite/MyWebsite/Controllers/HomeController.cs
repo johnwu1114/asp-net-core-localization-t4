@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using MyWebsite.Middlewares;
-using MyWebsite.Models;
 using System.Globalization;
 
 namespace MyWebsite.Controllers
@@ -18,7 +17,7 @@ namespace MyWebsite.Controllers
 
         public IActionResult Index()
         {
-            return View(model: new SampleModel());
+            return View();
         }
 
         public IActionResult Content()
