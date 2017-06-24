@@ -1,0 +1,155 @@
+﻿<#@ template  language="C#" hostspecific="true" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="EnvDTE" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="System.Xml.dll" #>
+<#@ assembly name="System.Xml.Linq.dll" #>
+<#@ import namespace="EnvDTE" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#
+  var defaultCulture = "en-gb";
+  var resources = GetResourcesByCulture(defaultCulture, this.Host.ResolvePath(""));
+#>
+namespace Resources
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Xml.Linq;
+
+    public interface ILocalizer
+    {
+        string GetString(Type category, string resourceKey);
+
+        string GetString(string category, string resourceKey);
+
+        string GetString(Type category, string resourceKey, string culture);
+
+        string GetString(string category, string resourceKey, string culture);
+    }
+
+    public class Localizer : ILocalizer
+    {
+        private const string DefaultCulture = "<#= defaultCulture #>";
+        private const string _resourceFolder = "Resources";
+        private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> _resources = new Lazy<Dictionary<string, Dictionary<string, string>>>(LoadResources);
+        private CultureInfo _culture;
+<# foreach (var category in resources) { #>
+        private <#= category.Key #> _<#= category.Key #>;
+<# } #>
+
+        public Localizer(string culture = DefaultCulture)
+        {
+            _culture = new CultureInfo(culture);
+
+        }
+<# foreach (var category in resources) { #>
+
+		public <#= category.Key #> <#= category.Key #> { get { if (_<#= category.Key #> == null) { _<#= category.Key #> = new <#= category.Key #>(this); } return _<#= category.Key #>; } }
+<# } #>
+
+        #region ILocalizer
+
+        public string GetString(Type category, string resourceKey)
+        {
+            return GetString(category.Name.ToString(), resourceKey);
+        }
+
+        public string GetString(string category, string resourceKey)
+        {
+            return GetString(category, resourceKey, _culture.Name);
+        }
+
+        public string GetString(Type category, string resourceKey, string culture)
+        {
+            return GetString(category.Name.ToString(), resourceKey, culture);
+        }
+
+        public string GetString(string category, string resourceKey, string culture)
+        {
+            var resource = GetResource($"{category}.{culture}") ?? GetResource($"{category}.{DefaultCulture}");
+            if (resource == null)
+            {
+                return resourceKey;
+            }
+            else
+            {
+                return resource.SingleOrDefault(r => r.Key.Contains(resourceKey)).Value ?? resourceKey;
+            }
+        }
+
+        #endregion ILocalizer
+
+        #region Private Methods
+
+        private static Dictionary<string, Dictionary<string, string>> LoadResources()
+        {
+            var files = Directory.GetFiles(_resourceFolder, "*.resx");
+            var resources = files.ToDictionary(file => Path.GetFileNameWithoutExtension(file), file =>
+            {
+                var xdoc = XDocument.Load(file);
+                var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
+                return dictionary;
+            }, StringComparer.CurrentCultureIgnoreCase);
+            return resources;
+        }
+
+        private Dictionary<string, string> GetResource(string key)
+        {
+            return _resources.Value.SingleOrDefault(r => r.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase)).Value;
+        }
+
+        #endregion
+    }
+
+    public abstract class ResourceBase
+    {
+        protected ResourceBase(ILocalizer localizer)
+        {
+            Localizer = localizer;
+        }
+
+        protected ILocalizer Localizer { get; private set; }
+
+        protected string GetString(string resourceKey)
+        {
+            return Localizer.GetString(GetType(), resourceKey);
+        }
+    }
+<# foreach (var category in resources) { #>
+
+    public class <#= category.Key #> : ResourceBase
+    {
+        public <#= category.Key #>(ILocalizer localizer) : base(localizer)
+        {
+        }
+<# foreach (var resource in category.Value) { #>
+
+		public string <#= resource.Key #> { get { return GetString("<#= resource.Key #>"); } }
+<# } #>
+    }
+<# } #>
+}
+<#+
+	Dictionary<string, Dictionary<string, string>> GetResourcesByCulture(string culture, string resourceFolder) {
+        var files = Directory.GetFiles(resourceFolder, "*.resx");
+		var resources = files.GroupBy(file =>
+			{
+				var fileName = Path.GetFileNameWithoutExtension(file).Split('.');
+				return fileName.First();
+			}).ToDictionary(g => g.Key, g =>
+			{
+				var defaultFile = g.Single(s => s.IndexOf(culture, StringComparison.CurrentCultureIgnoreCase) != -1);
+				var xdoc = XDocument.Load(defaultFile);
+				var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
+				return dictionary;
+			});
+		return resources;
+	}
+#>
