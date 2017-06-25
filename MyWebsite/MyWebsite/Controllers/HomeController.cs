@@ -1,16 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
-using MyWebsite.Middlewares;
+using MyWebsite.Filters;
+using Resources;
 using System.Globalization;
 
 namespace MyWebsite.Controllers
 {
-    [MiddlewareFilter(typeof(CultureMiddleware))]
+    [TypeFilter(typeof(CultureFilter))]
     public class HomeController : Controller
     {
-        private readonly IStringLocalizer _localizer;
+        private readonly ILocalizer _localizer;
 
-        public HomeController(IStringLocalizer<HomeController> localizer)
+        public HomeController(ILocalizer localizer)
         {
             _localizer = localizer;
         }
@@ -24,7 +24,7 @@ namespace MyWebsite.Controllers
         {
             return Content($"CurrentCulture: {CultureInfo.CurrentCulture.Name}\r\n"
                          + $"CurrentUICulture: {CultureInfo.CurrentUICulture.Name}\r\n"
-                         + $"{_localizer["Hello"]}");
+                         + $"{_localizer.Text.Hello}");
         }
     }
 }

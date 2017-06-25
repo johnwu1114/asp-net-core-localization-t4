@@ -1,8 +1,8 @@
 ﻿@using System.Globalization
-@using Microsoft.AspNetCore.Mvc.Localization
+@using Resources
 
-@inject IViewLocalizer Localizer
+@inject ILocalizer localizer
 
 CurrentCulture: @CultureInfo.CurrentCulture.Name <br />
 CurrentUICulture: @CultureInfo.CurrentUICulture.Name <br />
-@Localizer["Hello"]<br />
+@localizer.Text.Hello<br />

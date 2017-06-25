@@ -18,13 +18,19 @@ namespace Resources
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Xml.Linq;
 
     public interface ILocalizer
     {
+		string Culture { get; set; }
+
+<# foreach (var category in resources) { #>
+		<#= category.Key #> <#= category.Key #> { get; }
+
+<# } #>
         string GetString(Type category, string resourceKey);
 
         string GetString(string category, string resourceKey);
@@ -39,22 +45,40 @@ namespace Resources
         private const string DefaultCulture = "<#= defaultCulture #>";
         private const string _resourceFolder = "Resources";
         private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> _resources = new Lazy<Dictionary<string, Dictionary<string, string>>>(LoadResources);
-        private CultureInfo _culture;
+        private string _culture;
 <# foreach (var category in resources) { #>
         private <#= category.Key #> _<#= category.Key #>;
 <# } #>
 
-        public Localizer(string culture = DefaultCulture)
-        {
-            _culture = new CultureInfo(culture);
+        #region ILocalizer
 
+		public string Culture
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_culture))
+                {
+                    _culture = DefaultCulture;
+                }
+                return _culture;
+            }
+            set
+            {
+                var culture = value;
+                if (Regex.IsMatch(culture, @"^[A-Za-z]{2}-[A-Za-z]{2}$"))
+                {
+                    _culture = culture;
+                }
+                else
+                {
+                    _culture = DefaultCulture;
+                }
+            }
         }
 <# foreach (var category in resources) { #>
 
 		public <#= category.Key #> <#= category.Key #> { get { if (_<#= category.Key #> == null) { _<#= category.Key #> = new <#= category.Key #>(this); } return _<#= category.Key #>; } }
 <# } #>
-
-        #region ILocalizer
 
         public string GetString(Type category, string resourceKey)
         {
@@ -63,7 +87,7 @@ namespace Resources
 
         public string GetString(string category, string resourceKey)
         {
-            return GetString(category, resourceKey, _culture.Name);
+            return GetString(category, resourceKey, _culture);
         }
 
         public string GetString(Type category, string resourceKey, string culture)

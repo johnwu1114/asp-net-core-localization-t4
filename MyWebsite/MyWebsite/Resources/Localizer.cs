@@ -2,13 +2,19 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Xml.Linq;
 
     public interface ILocalizer
     {
+		string Culture { get; set; }
+
+		Message Message { get; }
+
+		Text Text { get; }
+
         string GetString(Type category, string resourceKey);
 
         string GetString(string category, string resourceKey);
@@ -23,21 +29,39 @@
         private const string DefaultCulture = "en-gb";
         private const string _resourceFolder = "Resources";
         private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> _resources = new Lazy<Dictionary<string, Dictionary<string, string>>>(LoadResources);
-        private CultureInfo _culture;
+        private string _culture;
         private Message _Message;
         private Text _Text;
 
-        public Localizer(string culture = DefaultCulture)
-        {
-            _culture = new CultureInfo(culture);
+        #region ILocalizer
 
+		public string Culture
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_culture))
+                {
+                    _culture = DefaultCulture;
+                }
+                return _culture;
+            }
+            set
+            {
+                var culture = value;
+                if (Regex.IsMatch(culture, @"^[A-Za-z]{2}-[A-Za-z]{2}$"))
+                {
+                    _culture = culture;
+                }
+                else
+                {
+                    _culture = DefaultCulture;
+                }
+            }
         }
 
 		public Message Message { get { if (_Message == null) { _Message = new Message(this); } return _Message; } }
 
 		public Text Text { get { if (_Text == null) { _Text = new Text(this); } return _Text; } }
-
-        #region ILocalizer
 
         public string GetString(Type category, string resourceKey)
         {
@@ -46,7 +70,7 @@
 
         public string GetString(string category, string resourceKey)
         {
-            return GetString(category, resourceKey, _culture.Name);
+            return GetString(category, resourceKey, _culture);
         }
 
         public string GetString(Type category, string resourceKey, string culture)
