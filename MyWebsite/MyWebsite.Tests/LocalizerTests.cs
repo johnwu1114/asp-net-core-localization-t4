@@ -2,7 +2,7 @@
 using Resources;
 using System;
 
-namespace MyWebsite.Tests.T4
+namespace MyWebsite.Tests
 {
     [TestFixture]
     public class LocalizerTests

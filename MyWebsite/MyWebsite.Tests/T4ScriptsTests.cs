@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace MyWebsite.Tests.T4
+namespace MyWebsite.Tests
 {
     [TestFixture]
     public class T4ScriptsTests
@@ -16,7 +16,7 @@ namespace MyWebsite.Tests.T4
             // Arrange
             var expected = "Hello~ This message from Text.en-GB.resx";
             var culture = "en-gb";
-            var resourceFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources");
+            var resourceFolder = "Resources";
             var files = Directory.GetFiles(resourceFolder, "*.resx");
 
             // Act
