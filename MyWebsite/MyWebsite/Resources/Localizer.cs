@@ -1,11 +1,13 @@
 ﻿namespace Resources
 {
-    using System;
+	using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
+    using System.Resources;
+    using System.Runtime.Loader;
     using System.Text.RegularExpressions;
-    using System.Xml.Linq;
 
     public interface ILocalizer
     {
@@ -28,7 +30,7 @@
     {
         private const string DefaultCulture = "en-gb";
         private const string _resourceFolder = "Resources";
-        private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> _resources = new Lazy<Dictionary<string, Dictionary<string, string>>>(LoadResources);
+        private static readonly Lazy<Dictionary<string, ResourceManager>> _resources = new Lazy<Dictionary<string, ResourceManager>>(LoadResourceManager);
         private string _culture;
         private Message _Message;
         private Text _Text;
@@ -87,7 +89,7 @@
             }
             else
             {
-                return resource.SingleOrDefault(r => r.Key.Contains(resourceKey)).Value ?? resourceKey;
+                return resource.GetString(resourceKey);
             }
         }
 
@@ -95,21 +97,31 @@
 
         #region Private Methods
 
-        private static Dictionary<string, Dictionary<string, string>> LoadResources()
+        private static Dictionary<string, ResourceManager> LoadResourceManager()
         {
-            var files = Directory.GetFiles(_resourceFolder, "*.resx");
-            var resources = files.ToDictionary(file => Path.GetFileNameWithoutExtension(file), file =>
+            var location = Assembly.GetEntryAssembly().Location;
+            var directory = Path.GetDirectoryName(location);
+            var files = Directory.GetFiles(directory, "*.resources.dll", SearchOption.AllDirectories);
+            
+            var resources = new Dictionary<string, ResourceManager>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (var file in files)
             {
-                var xdoc = XDocument.Load(file);
-                var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
-                return dictionary;
-            }, StringComparer.CurrentCultureIgnoreCase);
+                var culture = Path.GetFileName(Path.GetDirectoryName(file));
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
+                foreach(var resourceName in assembly.GetManifestResourceNames().Select(s=> Regex.Replace(s, ".resources$", "")))
+                {
+                    var category = Regex.Match(resourceName, $".*Resources\\.(.*)\\.{culture}").Groups[1].Value;
+                    var resourceManager = new ResourceManager(resourceName, assembly);
+                    resources.Add($"{category}.{culture}", resourceManager);
+                }
+            }
+
             return resources;
         }
 
-        private Dictionary<string, string> GetResource(string key)
+        private ResourceManager GetResource(string key)
         {
-            return _resources.Value.SingleOrDefault(r => r.Key.Equals(key, StringComparison.CurrentCultureIgnoreCase)).Value;
+            return _resources.Value[key];
         }
 
         #endregion
