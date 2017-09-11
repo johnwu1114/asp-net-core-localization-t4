@@ -121,7 +121,11 @@
 
         private ResourceManager GetResource(string key)
         {
-            return _resources.Value[key];
+            if (_resources.Value.Keys.Contains(key))
+            {
+                return _resources.Value[key];
+            }
+            return null;
         }
 
         #endregion
