@@ -29,12 +29,20 @@
     public class Localizer : ILocalizer
     {
         private const string DefaultCulture = "en-gb";
-        private const string _resourceFolder = "Resources";
         private static readonly Lazy<Dictionary<string, ResourceManager>> _resources = new Lazy<Dictionary<string, ResourceManager>>(LoadResourceManager);
+		private static string _assemblyPath;
         private string _culture;
-        private Message _Message;
-        private Text _Text;
+        private Message _message;
+        private Text _text;
 
+		public Localizer() {
+			_assemblyPath = Assembly.GetEntryAssembly().Location;
+		}
+
+		public Localizer(string assemblyPath) {
+			_assemblyPath = assemblyPath;
+		}
+            
         #region ILocalizer
 
 		public string Culture
@@ -61,9 +69,9 @@
             }
         }
 
-		public Message Message { get { if (_Message == null) { _Message = new Message(this); } return _Message; } }
+		public Message Message { get { if (_message == null) { _message = new Message(this); } return _message; } }
 
-		public Text Text { get { if (_Text == null) { _Text = new Text(this); } return _Text; } }
+		public Text Text { get { if (_text == null) { _text = new Text(this); } return _text; } }
 
         public string GetString(Type category, string resourceKey)
         {
@@ -99,8 +107,7 @@
 
         private static Dictionary<string, ResourceManager> LoadResourceManager()
         {
-            var location = Assembly.GetEntryAssembly().Location;
-            var directory = Path.GetDirectoryName(location);
+            var directory = Path.GetDirectoryName(_assemblyPath);
             var files = Directory.GetFiles(directory, "*.resources.dll", SearchOption.AllDirectories);
             
             var resources = new Dictionary<string, ResourceManager>(StringComparer.CurrentCultureIgnoreCase);

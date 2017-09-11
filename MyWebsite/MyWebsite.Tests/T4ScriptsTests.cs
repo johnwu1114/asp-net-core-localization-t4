@@ -1,45 +1,53 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
+using System.Resources;
+using System.Runtime.Loader;
+using System.Text.RegularExpressions;
+using NUnit.Framework;
 
 namespace MyWebsite.Tests
 {
     [TestFixture]
     public class T4ScriptsTests
     {
+        private static string _assemblyPath = Directory.GetCurrentDirectory();
+
         [Test]
-        public void T4_GetResourcesByCulture()
+        public void T4_LoadResourceManager()
         {
             // Arrange
             var expected = "Hello~ This message from Text.en-GB.resx";
             var culture = "en-gb";
-            var resourceFolder = "Resources";
-            var files = Directory.GetFiles(resourceFolder, "*.resx");
+            var category = "Text";
+            var key = "Hello";
 
             // Act
-            var actual = GetResourcesByCulture(culture, resourceFolder);
+            var actual = LoadResourceManager()[$"{category}.{culture}"].GetString(key);
 
             // Assert
-            Assert.AreEqual(expected, actual["Text"]["Hello"]);
+            Assert.AreEqual(expected, actual);
         }
 
-        private Dictionary<string, Dictionary<string, string>> GetResourcesByCulture(string culture, string resourceFolder)
+        private Dictionary<string, ResourceManager> LoadResourceManager()
         {
-            var files = Directory.GetFiles(resourceFolder, "*.resx");
-            var resources = files.GroupBy(file =>
+            var directory = Path.GetDirectoryName(_assemblyPath);
+            var files = Directory.GetFiles(directory, "*.resources.dll", SearchOption.AllDirectories);
+
+            var resources = new Dictionary<string, ResourceManager>(StringComparer.CurrentCultureIgnoreCase);
+            foreach (var file in files)
             {
-                var fileName = Path.GetFileNameWithoutExtension(file).Split('.');
-                return fileName.First();
-            }).ToDictionary(g => g.Key, g =>
-            {
-                var defaultFile = g.Single(s => s.IndexOf(culture, StringComparison.CurrentCultureIgnoreCase) != -1);
-                var xdoc = XDocument.Load(defaultFile);
-                var dictionary = xdoc.Root.Elements("data").ToDictionary(e => e.Attribute("name").Value, e => e.Element("value").Value);
-                return dictionary;
-            });
+                var culture = Path.GetFileName(Path.GetDirectoryName(file));
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
+                foreach (var resourceName in assembly.GetManifestResourceNames().Select(s => Regex.Replace(s, ".resources$", "")))
+                {
+                    var category = Regex.Match(resourceName, $".*Resources\\.(.*)\\.{culture}").Groups[1].Value;
+                    var resourceManager = new ResourceManager(resourceName, assembly);
+                    resources.Add($"{category}.{culture}", resourceManager);
+                }
+            }
+
             return resources;
         }
     }

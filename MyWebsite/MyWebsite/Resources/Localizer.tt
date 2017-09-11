@@ -45,13 +45,21 @@ namespace Resources
     public class Localizer : ILocalizer
     {
         private const string DefaultCulture = "<#= defaultCulture #>";
-        private const string _resourceFolder = "Resources";
         private static readonly Lazy<Dictionary<string, ResourceManager>> _resources = new Lazy<Dictionary<string, ResourceManager>>(LoadResourceManager);
+		private static string _assemblyPath;
         private string _culture;
 <# foreach (var category in resources) { #>
-        private <#= category.Key #> _<#= category.Key #>;
+        private <#= category.Key #> _<#= category.Key.ToLower() #>;
 <# } #>
 
+		public Localizer() {
+			_assemblyPath = Assembly.GetEntryAssembly().Location;
+		}
+
+		public Localizer(string assemblyPath) {
+			_assemblyPath = assemblyPath;
+		}
+            
         #region ILocalizer
 
 		public string Culture
@@ -79,7 +87,7 @@ namespace Resources
         }
 <# foreach (var category in resources) { #>
 
-		public <#= category.Key #> <#= category.Key #> { get { if (_<#= category.Key #> == null) { _<#= category.Key #> = new <#= category.Key #>(this); } return _<#= category.Key #>; } }
+		public <#= category.Key #> <#= category.Key #> { get { if (_<#= category.Key.ToLower() #> == null) { _<#= category.Key.ToLower() #> = new <#= category.Key #>(this); } return _<#= category.Key.ToLower() #>; } }
 <# } #>
 
         public string GetString(Type category, string resourceKey)
@@ -116,8 +124,7 @@ namespace Resources
 
         private static Dictionary<string, ResourceManager> LoadResourceManager()
         {
-            var location = Assembly.GetEntryAssembly().Location;
-            var directory = Path.GetDirectoryName(location);
+            var directory = Path.GetDirectoryName(_assemblyPath);
             var files = Directory.GetFiles(directory, "*.resources.dll", SearchOption.AllDirectories);
             
             var resources = new Dictionary<string, ResourceManager>(StringComparer.CurrentCultureIgnoreCase);
